@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb-service
+spec:
+  type: ClusterIP
+  selector:
+    app: influxdb
+  ports:
+  - port: 8086
+    targetPort: 8086
+    protocol: TCP
+    name: influxdb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+spec:
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: influxdb
+        image: influxdb:local
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8086
+          name: influxdb
+        volumeMounts:
+        - name: influx-volume
+          mountPath: /var/lib/influxdb
+        # livenessProbe:
+        #   tcpSocket:
+        #     port: 8086
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - ./livenessProbe.sh
+          initialDelaySeconds: 15
+          periodSeconds: 3
+      volumes:
+      - name: influx-volume
+        persistentVolumeClaim:
+          claimName: influx-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: influx-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi

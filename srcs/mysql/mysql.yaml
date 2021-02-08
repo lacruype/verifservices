@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+  - name: mysql
+    port: 3306
+    targetPort: 3306
+    protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: mysql
+        image: mysql:local
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3306
+          name: mysql
+        # livenessProbe:
+        #   tcpSocket:
+        #     port: 3306
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - ./livenessProbe.sh
+          initialDelaySeconds: 15
+          periodSeconds: 3
+        volumeMounts:
+        - name: mysql-volume
+          mountPath: /var/lib
+      volumes:
+      - name: mysql-volume
+        persistentVolumeClaim:
+          claimName: mysql-pvcl
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvcl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi

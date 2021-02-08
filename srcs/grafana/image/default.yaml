@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+    -   name: InfluxDB
+        type: influxdb
+        orgId: 1
+        url: http://INFLUX_IP:8086
+        access: proxy
+        user: influx_user
+        database: telegraf
+        secureJsonData:
+            password: influx_password

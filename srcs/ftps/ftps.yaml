@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ftps-service
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 172.17.0.108
+  selector:
+    app: ftps
+  ports:
+  - port: 21
+    targetPort: 21
+    protocol: TCP
+    name: ftp
+  - port: 20
+    targetPort: 20
+    protocol: TCP
+    name: ftp-passive
+  - port: 30020
+    targetPort: 30020
+    protocol: TCP
+    name: ftp-passv1
+  - port: 30021
+    targetPort: 30021
+    protocol: TCP
+    name: ftp-passv2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ftps
+  labels:
+    app: ftps
+spec:
+  selector:
+    matchLabels:
+      app: ftps
+  template:
+    metadata:
+      labels:
+        app: ftps
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: ftps
+        image: ftps:local
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 21
+          name: ftp
+        - containerPort: 20
+          name: ftp-pasv
+        - containerPort: 30021
+          name: ftp-pasv1
+        - containerPort: 30020
+          name: ftp-pasv2
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - ./livenessProbe.sh
+          initialDelaySeconds: 15
+          periodSeconds: 3
+        # livenessProbe:
+        #   tcpSocket:
+        #     port: 21
